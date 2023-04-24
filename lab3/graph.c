@@ -7,9 +7,8 @@ graph *graph_create(int nvertices)
     if (g == NULL)
         return NULL;
     g->nvertices = nvertices;
-    g->m = malloc(sizeof(int) * nvertices * nvertices);
+    g->m = calloc(sizeof(int), nvertices * nvertices);
     g->visited = malloc(sizeof(int) * nvertices);
-    graph_clear(g);
     return g;
 }
 
@@ -34,13 +33,13 @@ void graph_free(graph *g)
 
 void graph_set_edge(graph *g, int x, int y, int weight)
 {
-    g->m[(x - 1) * g->nvertices + y - 1] = weight;
-    g->m[(y - 1) * g->nvertices + x - 1] = weight;
+    g->m[(x) * g->nvertices + y] = weight;
+    g->m[(y) * g->nvertices + x] = weight;
 }
 
 int graph_get_edge(graph *g, int x, int y)
 {
-    return g->m[(x -1) * g->nvertices + y - 1];
+    return g->m[(x) * g->nvertices + y];
 }
 
 void graph_dfs(graph *g, int v)
@@ -95,4 +94,87 @@ void I_Main_I()
     graph_dfs(g, 1);
 
     graph_free(g);
+}
+
+void random_graph(graph *g)
+{
+    srand(time(NULL));
+    int length = g->nvertices;
+    for (short x = 0; x < length; x++)
+    {
+        short count = 0;
+        for (short y = 0; y < length; y++)
+        {
+            int r[] = {1 + rand() % 50, 0};
+            if (x == y)
+            {
+                continue;
+            }
+            else if (x > y && graph_get_edge(g, x, y) != 0)
+            {
+                count++;
+            }
+            else if (x < y)
+            {
+                int random = rand() % 2;
+                graph_set_edge(g, x, y, r[random]);
+                if (random == 0)
+                    count++;
+            }
+            if (count == 0)
+                // graph_set_edge(g, x, rand() % length, r[0]);
+            if (count == 3)
+                break;
+        }
+    }
+}
+
+void random_graph_grid(graph *g)
+{
+    srand(time(NULL));
+    int length = g->nvertices;
+    short degree = (int)sqrt(length);
+    for (short x = 0; x < length; x++)
+    {
+        
+        for (short y = x + 1; y < length; y++)
+        {
+            int r[2] = {0, 1};
+            if (length % degree == y % degree)
+            {
+                graph_set_edge(g, x, y + degree - 1, r[1]);
+                break;
+            }
+            else if (x > length - sqrt(length) - 1)
+            {
+                graph_set_edge(g, x, y, r[1]);
+                break;
+            }
+            else if (x < length - 1 && y < length - 1)
+            {
+                graph_set_edge(g, x, y, r[1]);
+                graph_set_edge(g, x, y + sqrt(length) - 1, r[1]);
+                break;
+            } 
+            else
+            {
+                continue;
+            }
+        }
+    }
+}
+
+void graph_print(graph *g)
+{
+    int length = g->nvertices;
+    short x = 0;
+    for ( ;x < length; x++)
+    {
+        short y = 0;
+        for ( ;y < length; y++)
+        {
+            printf("%3d ", graph_get_edge(g, x, y));
+        }
+        printf("\n");
+    }
 }

@@ -22,6 +22,7 @@ heap *heap_create(int maxsize)
         h->maxsize = maxsize;
         h->nnodes = 0;
         h->nodes = malloc(sizeof(*h->nodes) * (maxsize + 1));
+        h->pos = malloc(sizeof(int) * (maxsize + 1));
         if (h->nodes == NULL)
         {
             free(h);
@@ -46,74 +47,95 @@ void heap_swap(heapnode *a, heapnode *b)
     *b = temp;
 }
 
+void pos_swap(int *a, int *b)
+{
+    int temp;
+    temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+void heapify_down(heap *h)
+{
+    int i = h->nnodes;
+    while (i > 1 && h->nodes[i].key < h->nodes[heap_parent(i)].key)
+    {
+        heap_swap(&h->nodes[i], &h->nodes[heap_parent(i)]);
+        pos_swap(&h->pos[h->nodes[i].value], &h->pos[h->nodes[heap_parent(i)].value]);
+        i = heap_parent(i);
+    }
+}
+
 heapnode *heap_min(heap *h)
 {
     if (h->nnodes == 0)
         return NULL;
     
-    return &h->nodes[0];
+    return &h->nodes[1];
 }
 
-int heap_insert(heap *h, int key, char *value)
+int heap_insert(heap *h, int key, int value)
 {
-    if (h->nnodes >= h->maxsize)
+    if(h->nnodes >= h->maxsize)
         return -1;
-
+    
     h->nnodes++;
     h->nodes[h->nnodes].key = key;
     h->nodes[h->nnodes].value = value;
-    
-    // HeapifyUp
-    for (int i = h->nnodes; i > 1 && h->nodes[i].key < h->nodes[heap_parent(i)].key; i = heap_parent(i))
-        heap_swap(&h->nodes[i], &h->nodes[heap_parent(i)]);
-
+    h->pos[value] = h->nnodes;
+    heapify_down(h);
     return 0;
 }
 
 heapnode heap_extract_min(heap *h)
 {
     if (h->nnodes == 0)
-        return (heapnode) {0, NULL};
-    
-    heapnode minode = h->nodes[1];
+		return (heapnode){0, -1};
+    heapnode minnode;
+    minnode = h->nodes[1];
     h->nodes[1] = h->nodes[h->nnodes];
+    h->pos[h->nodes[1].value] = 1;
     h->nnodes--;
-    heap_heapify(h, 0);
-    return minode;
+    heap_heapify(h, 1);
+    return minnode;
 }
 
 void heap_heapify(heap *h, int index)
 {
-    for ( ; ; )
+    for(;;)
     {
         int left = heap_left(index);
         int right = heap_right(index);
-
-        int largest = index;
-        if (left <= h->nnodes && h->nodes[left].key < h->nodes[index].key)
-            largest = left;
-        
-        if (right <= h->nnodes && h->nodes[right].key < h->nodes[index].key)
-            largest = right;
-        
-        if (largest == index)
+        int smallest = index;
+        if (left < h->nnodes && h->nodes[left].key < h->nodes[index].key)
+        {
+            smallest = left;
+        }
+        if (right < h->nnodes && h->nodes[right].key < h->nodes[smallest].key)
+		{
+			smallest = right;
+		}
+        if(smallest == index)
             break;
-
-        heap_swap(&h->nodes[index], &h->nodes[largest]);
-        index = largest;
+        heap_swap(&h->nodes[index], &h->nodes[smallest]);
+        pos_swap(&h->pos[h->nodes[index].value], &h->pos[h->nodes[smallest].value]);
+        index = smallest;
     }
 }
 
 int heap_decrease_key(heap *h, int index, int newkey)
-{
-    if (h->nodes[index].key < newkey)
+{   
+    int shift = h->pos[index];
+    if(h->nodes[shift].key < newkey)
         return -1;
-    
-    h->nodes[index].key = newkey;
-    while (index > 1 && h->nodes[index].key < h->nodes[heap_parent(index)].key)
-    {
-        heap_swap(&h->nodes[index], &h->nodes[heap_parent(index)]);
-        index = heap_parent(index);
-    }
-    return index;
+    h->nodes[shift].key = newkey;
+	for (;shift > 1; shift = shift / 2;)
+	{
+		if (h->nodes[shift].key < h->nodes[shift / 2].key)
+		{
+			heap_swap(&h->nodes[shift], &h->nodes[shift / 2]);
+			pos_swap(&h->pos[h->nodes[shift].value], &h->pos[h->nodes[shift / 2].value]);
+		}
+	}
+	return shift;
 }

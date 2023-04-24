@@ -1,33 +1,42 @@
 #include "lib.h"
 
+double wtime()
+{
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    return (double)t.tv_sec + (double)t.tv_usec * 1E-6;
+}
+
 int main()
 {
-    heap *h;
-    heapnode node;
+    graph *g = malloc(sizeof(g));
+    int prev[SIZE_1+1], path[SIZE_1];
+    int j, src, pathlen = 0;
+    double time;
 
-    h = heap_create(100);
-    heap_insert(h, 16, "1");
-    heap_insert(h, 14, "2");
-    heap_insert(h, 10, "3");
-    heap_insert(h, 80, "4");
-    heap_insert(h, 70, "5");
-    heap_insert(h, 90, "6");
-    heap_insert(h, 40, "7");
-    heap_insert(h, 30, "8");
-    heap_insert(h, 20, "9");
-    heap_insert(h, 19, "10");
+    g = graph_create(SIZE_1);
+    random_graph_grid(g);
+    graph_print(g);
+    src = 1;
 
-    node = heap_extract_min(h);
-    printf("Item: %d\n", node.key);
-
-    node = heap_extract_min(h);
-    printf("Item: %d\n", node.key);
-
-    printf("%d\n", heap_decrease_key(h, 1, 11));
-
-    node = heap_extract_min(h);
-    printf("Item: %d\n", node.key);
-
-    heap_free(h);
+    time = wtime();
+    Dejkstra(g, src, prev);
+    time = wtime() - time;
+    printf("\n");
+    for (int i = 1; i < SIZE_1 + 1; i++)
+    {
+        if (i == src)
+            continue;
+        printf("Vertise %d:\n", i);
+        pathlen = search_shortest_path(g, src, i, prev, path);
+        printf("Path: (");
+        for (j = 1; j < pathlen; j++)
+        {
+           printf("%d, ", path[j]); 
+        }
+        printf("%d)\n", path[j]);
+    }
+    graph_free(g);
+    printf("%f\n", time);
     return 0;
 }
